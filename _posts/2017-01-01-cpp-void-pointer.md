@@ -1,7 +1,7 @@
 ---
 layout:	post
 title:	void* 差異
-date:	2017-05-05
+date:	2017-01-01
 categories: cpp_lang
 ---
 `void*` 在C++語言是所有指標型態的super type. 指向一個不知道型態物件的指標. 

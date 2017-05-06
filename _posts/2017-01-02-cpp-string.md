@@ -1,7 +1,7 @@
 ---
 layout:	post
 title:	C++ Array and string literal
-date:	2017-05-06
+date:	2017-01-02
 categories: cpp_lang
 --- 
 ### C++ array
@@ -17,7 +17,8 @@ int r1[]={1, 2, 3, 4, 5};
 
 ```
 //error in C++ compiler, but warning in C compiler
-int r2[5] = { 1, 2, 3, 4, 5, 6}; 
+int r2[5] = {1, 2, 3, 4, 5, 6};	\\ C++ error: too many initializers for ‘int [5]’ or
+				\\ C warning: excess elements in array initializer
 ``` 
 
 若長度多於`initializer list`內的元素個數, 則超過的部份, 元素值將設為0.
@@ -42,7 +43,7 @@ char c2[] = "help"; //sizeof(c2) == 5
 
 ### string literal
 
-`string literal`的型態在C++語言中的型態為`const char array`, 但是在C語言中僅僅是`char array`. 因此以下在C語言中是合法的
+`string literal`在C++語言中的型態為`const char array`, 但是在C語言中僅僅是`char array`. 因此以下在C語言中是合法的
 
 ```
 char * xp ="help";
