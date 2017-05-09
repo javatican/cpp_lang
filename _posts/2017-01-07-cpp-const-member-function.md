@@ -6,8 +6,7 @@ categories: cpp_lang
 --- 
   
 C++語言的const宣告使用的非常頻繁. 對於使用像是Java語言的人來說, C++ const是比較陌生的一個主題.
-基本上C++希望設計函式庫的人, 能盡量多使用const, 像是參數, 回傳值, 甚至成員函數本身, 如果不會改變物件的內容, 
-都應該使用const, 將設計者的想法或意圖表達清楚.
+基本上C++希望設計函式庫的人, 能盡量多使用const, 像是參數, 回傳值, 甚至成員函數本身, 如果不會改變物件的內容, 都應該使用const, 將設計者的想法或意圖表達清楚. 也可以讓compiler幫忙找出使用上的錯誤. 
 
 舉一個例子來說明:
 
@@ -77,7 +76,7 @@ class CTextBlock {
 };
 ```
 
-從string物件換成char*物件, const的意義也就從string內容不能改變變成char指標位址不能改變. 後者的意義即是只要char指標沒有轉向, 指向其他char物件, 就算是符合const的精神. 因此這裡的`const operator[]()`的回傳值型態, 雖然我們定義成`const char&`, 但是實際上也可以宣告為`char&`或`char`. 當然意義完全不同.
+從string物件換成char*物件, const的意義也就從string內容不能改變變成char指標位址不能改變. 後者的意義即是只要char指標沒有轉向(指向其他char物件), 就算是符合const的精神. 因此這裡的`const operator[]()`的回傳值型態, 雖然我們定義成`const char&`, 但是實際上也可以宣告為`char&`或`char`. 當然意義完全不同.
 
 1. 宣告成`const char&`
 
@@ -133,5 +132,25 @@ class CTextBlock {
 ```
 
 CTextBlock加上了兩個內部變數textLength, lengthIsValid並且宣告為`mutable`. 所以在const length()函數中, 可以改變這些宣告為mutable的成員變數, 其並不違反const.
+
+
+### code duplication問題
+以上利用overloading所撰寫的const operator[]()與non-const operator[]()基本上內容是重複的, 差異只是在回傳值型態是否為const. 所以可以讓non-const的member function, 呼叫const的member function.
+
+```
+const char& operator[](std::size_t position) const{ 
+	return pText[position]; 
+}
+
+char& operator[](std::size_t position)
+{ 
+	const_cast<char&>(static_cast<const CTextBlock&>(*this)[position]);
+}
+```
+
+這裡先用`static_cast`語法將non-const CTextBlock物件轉型成const物件, 然後呼叫const operator[](), 最後再利用`const_cast`語法, 將回傳值型態`const char&`轉回`char&`.
+
+
+問題是可**否讓const的member function, 呼叫non-const的member function呢?** 這樣做是會有風險的, 因為non-const member function基本上是可能改變`*this`物件狀態的. 以上範例是可以改成這樣的寫法, 但是在基本概念上, 是錯誤的作法.
 
 :sweat_smile:
