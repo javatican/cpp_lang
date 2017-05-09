@@ -55,7 +55,83 @@ std::cout<<tb[0]<<std::endl;
 tb[0]='H'; //ok
 ```
 
-`non-const operator[]()`的回傳值宣告為`char&`. 這裡不能使用`char`, 因為回傳單一個char, 是所謂的`rvalue`, 是不能放在指定運算子的左邊. 因此`tb[0]='H'`就不合法. 相對的`char&`是所謂的lvalue, 可以放在指定運算子的左邊.
-基本上一個資料, **若是可以取得它的記憶體位址(identifiable location in memory), 便是lvalue, 否則就是rvalue.**
+`non-const operator[]()`的回傳值宣告為`char&`. 這裡不能使用`char`, 因為回傳單一個char, 是所謂的`rvalue`, 是不能放在指定運算子的左邊. 因此`tb[0]='H'`就不合法. 相對的`char&`是所謂的`lvalue`, 可以放在指定運算子的左邊.基本上一個資料, **若是可以取得它的記憶體位址(identifiable location in memory), 便是`lvalue`, 否則就是`rvalue`.**
+
+### bitwise const 
+
+上面範例示範的const member function是使用`bitwise const`的形式, 也就是只要`*this`物件內容沒有改變(從儲存物件的記憶體內容的bit形式來說沒有改變, 所以稱為bitwise const), 就視為const. 我們稍微改寫一下上述的範例, 把它的member variable `string text`換成`char* ptext`
+
+```
+class CTextBlock {
+    public:
+        CTextBlock(char* text){
+            this->pText=text;
+        }
+        const char& operator[](std::size_t position) const
+            { return pText[position]; }
+        char& operator[](std::size_t position)
+            { return pText[position]; }
+        
+    private:
+        char* pText;
+};
+```
+
+從string物件換成char*物件, const的意義也就從string內容不能改變變成char指標位址不能改變. 後者的意義即是只要char指標沒有轉向, 指向其他char物件, 就算是符合const的精神. 因此這裡的`const operator[]()`的回傳值型態, 雖然我們定義成`const char&`, 但是實際上也可以宣告為`char&`或`char`. 當然意義完全不同.
+
+1. 宣告成`const char&`
+
+可以確保pText指標所指向的字串物件在透過[]運算子取得某個位置的字元時, 不可以改變值.
+所以`ctb[0]='H'`是不合法的.
+
+```
+char[] text="hello";
+CTextBlock ctb(text);
+std::cout<<ctb[0]<<std::endl;
+ctb[0]='H'; //error
+``` 
+
+注意: 這裡CTextBlock的建構子`CTextBlock(char* text)`, 所要傳入的參數為`char*`型態, 我們不可以直接傳入`string literal`, "hello". 因為`string literal`的型態在C++中是`const char[]`, 不能夠轉型成`char*`, 目前會有`warning: deprecated conversion from string constant to ‘char*’`. 所以我們先產生一個`char[]`陣列, 然後再傳入給CTextBlock建構子.
+
+2. 宣告成`char&`
+
+這樣並沒有違反`const operator[]()`的承諾. 因為我們不會改變pText指標. 但是pText指標所指向的字串物件, 可以透過[]運算子取得某個位置的字元, 並且改變其內容. 所以`ctb[0]='H'`就變成是合法的.
+
+3. 宣告成`char`
+
+pText指標所指向的字串物件, 可以透過[]運算子取得某個位置的字元, 做複製然後回傳. 但是如同前面提及過的, 回傳char, 就變成一種`rvalue`, 是不能放在指定運算子的左邊. 所以`ctb[0]='H'`是不合法的.
+
+所以上面這個使用`char*`作為成員變數的CTextBlock類別範例, 雖然使用`const member function`, 但是基於它是`bitwise const`的形式, 所以除非我們在回傳值型態也宣告為const, 否則是違反我們心中所常識認知的const的意圖的.
+
+### logical const 
+
+所以這裡再說道另一種const的概念叫做`logical const`. 這是從使用者的角度來看物件是否為const, 基於封裝的原則, 常常一些內部的物件狀態, 資料是隱藏起來的, 因此只要讓使用者感覺物件內容沒有改變即可, 一些內部隱藏的資料做一些改變是並不違反const精神的. 這裡可以將允許被改變的成員變數宣告為`mutable`. 例如:
+
+```
+class CTextBlock {
+    public:
+        CTextBlock(char* text){
+            this->pText=text;
+        }
+        const char& operator[](std::size_t position) const
+            { return pText[position]; }
+        char& operator[](std::size_t position)
+            { return pText[position]; }
+		//
+        std::size_t length() const{
+            if(!lengthIsValid){
+                textLength = std::strlen(pText); //ok
+                lengthIsValid=true; //ok
+            }
+            return textLength;
+        }
+    private:
+        char* pText;
+        mutable std::size_t textLength;
+        mutable bool lengthIsValid;
+};
+```
+
+CTextBlock加上了兩個內部變數textLength, lengthIsValid並且宣告為`mutable`. 所以在const length()函數中, 可以改變這些宣告為mutable的成員變數, 其並不違反const.
 
 :sweat_smile:
